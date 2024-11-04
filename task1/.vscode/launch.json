@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/kwunhei/Downloads/techarena24_playground-main/task1",
+      "program": "/Users/kwunhei/Downloads/techarena24_playground-main/task1/build/Debug/outDebug"
+    }
+  ]
+}

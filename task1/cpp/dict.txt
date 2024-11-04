@@ -1,0 +1,61 @@
+{
+	"#include <iostream>": "Includes input/output library to enable console operations.",
+
+    "int main()": "The starting point of any C++ program, must return an int.",
+    
+    "std::cout": "Prints text to the console, like Python's print().",
+    
+    "std::endl": "Moves console output to a new line, like Python's '\\n'.",
+    
+    "std::": "Prefix to use functions or objects from the standard C++ library.",
+    
+    "return 0;": "Signals successful program completion in main.",
+    
+    "int": "A data type for integers, used for whole numbers.",
+    
+    "float / double": "Data types for decimal numbers; double has more precision.",
+    
+    "bool": "Data type for true/false values.",
+    
+    "// Comment": "Adds a single-line comment, ignored by compiler.",
+    
+    "/* … */": "Marks multi-line comments, ignored by compiler.",
+    
+    "if (condition)": "Checks a condition; runs code block if true.",
+    
+    "for (int i = 0; i < n; i++)": "Loop that runs a block of code a set number of times.",
+    
+    "while (condition)": "Loop that continues as long as condition is true.",
+    
+    "{}": "Curly braces group code in functions, loops, and conditions.",
+    
+    ";": "Ends a statement, required after each line of code.",
+    
+    "<variable_type> variable_name": "Declares a variable of specific type, like int x.",
+    
+    "<data_type> array[size]": "Declares an array, a fixed-size collection of values.",
+    
+    "std::vector": "A dynamic array that can grow in size (useful for flexible data storage).",
+    
+    "std::map": "A dictionary-like container for key-value pairs (requires #include <map>).",
+    
+    ".push_back()": "Adds an element to the end of a vector.",
+    
+    ".size()": "Gets the number of elements in a vector or string.",
+    
+    ".find(key)": "Finds an item in a map or string; returns its position or end if not found."
+}
+
+1. **C++ Prioritizes Speed and Efficiency**: C++ is designed for performance and control over hardware resources, so you’ll see things like **manual memory management** (managing memory carefully yourself) and lower-level access to computer memory. This is why memory and processing are emphasized in challenges—C++ is close to the hardware.
+
+2. **Compiled Language**: C++ code must be **compiled** (translated) into machine code before it can run, unlike Python, which is interpreted line by line. Compilation helps C++ programs run faster but requires you to check for errors before running the program.
+
+3. **Standard Library (STL)**: C++ comes with a **standard library** (STL), containing common data structures and algorithms that are efficient and widely used, such as std::vector (dynamic arrays), std::map (key-value storage), and others. Using these libraries saves time and reduces errors, as they are optimized and thoroughly tested.
+
+4. **Namespaces**: In C++, functions and objects are often organized into **namespaces** (like std:: for standard library items) to prevent naming conflicts. This is why you use std::cout instead of just cout—it helps keep things organized.
+
+5. **Strict Typing**: C++ is a **statically typed language**, meaning you must declare the data type of each variable, and it can’t change. This improves efficiency but requires more upfront planning, unlike Python, where types can change.
+
+6. **Manual Memory Management**: In C++, you have more control and responsibility over memory usage. Some data structures require careful planning to avoid “memory leaks” (unused memory that doesn’t get freed). This is important in challenges with tight memory limits.
+
+7. **Error Codes (Exit Status)**: C++ programs use return codes, where 0 usually means success and non-zero values mean different errors. This concept is fundamental to main() in C++ and signals the success or failure of a program to the operating system.
