@@ -45,16 +45,13 @@ bool RoboPredictor::predictTimeOfDayOnNextPlanet(
     TAGE starts by looking at a simple, backup prediction table called the bimodal table. 
     This table uses a basic strategy to predict if the branch is likely to be taken.
     */
+   // Look at SpaceShipComputerPrediction : 77% or current_prototype : 79%
 
-    // Look at SpaceShipComputerPrediction : 77% or current_prototype : 79%
 
-   /* STEP 3 
-   TAGE also looks at more advanced table (e.g., short-term, mid-term, long-term history) 
-   to get deeper insights based on the current and past patterns. Using these tables, 
-   TAGE combines predictions, prioritizing the most confident predictions 
-   (often based on longer histories) to form its initial prediction. */
-
-   // Long term table
+   // Exercise 1 Long term table Update
+   // Inialize variables
+   // Prediction 
+   // Feedback loop
 
 
   // 1.1
@@ -85,6 +82,7 @@ bool RoboPredictor::predictTimeOfDayOnNextPlanet(
       }};
 
       memory.last_prediction = prediction;
+
 /*
 	TAGE makes a final prediction by choosing 
     1 the most confident
