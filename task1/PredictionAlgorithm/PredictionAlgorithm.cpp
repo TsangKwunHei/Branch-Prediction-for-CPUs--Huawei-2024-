@@ -2,7 +2,8 @@
 #include <vector>
 #include <string>
 #include <iostream>
-
+#include <memory>
+#include <deque>
 
 // This file contains a template for the implementation of Robo prediction
 // algorithm
@@ -12,40 +13,60 @@
 struct RoboPredictor::RoboMemory {
   // Place your RoboMemory content here
   // Note that the size of this data structure can't exceed 64KiB!
+
   int last_state = 0 | 1;
   // {P_day_to_day, P_day_to_night, P_night_to_night, P_night_to_day};
   std::array<float, 4> probabilities = {0.6, 0.6, 0.4, 0.4};
+  float P_day_night_to_day = 0.5;
+  float P_day_night_to_night = 0.5;
+  float P_night_day_to_day = 0.5;
+  float P_night_day_to_night = 0.5;
+  std::array<float, 4> confidence = {1.0,1.0,1.0,1.0};
+  std::vector<int> last_2 = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
+
+
+  const size_t limit = 5;
+
+
+  float confidence_weight = 0.1;
+  const float increment = 0.05;
+  const float decrement = 0.03;
   bool last_prediction;
   int decision = 0 | 1 | 2 | 3;
+  int round_count = 0;
 };
 
 bool RoboPredictor::predictTimeOfDayOnNextPlanet(
     std::uint64_t nextPlanetID, bool spaceshipComputerPrediction) {
-  // Robo can consult data structures in its memory while predicting.
-  // Example: access Robo's memory with roboMemory_ptr-><your RoboMemory
-  // content>
 
-  
+  // 1.1
+  auto& memory = *roboMemory_ptr;
+  float day_to_day = memory.probabilities[0] * (1 + memory.confidence_weight * memory.confidence[0]);
+  float day_to_night = memory.probabilities[1] * (1 + memory.confidence_weight * memory.confidence[1]);
+  float night_to_night = memory.probabilities[2] * (1 + memory.confidence_weight * memory.confidence[2]);
+  float night_to_day = memory.probabilities[3] * (1 + memory.confidence_weight * memory.confidence[3]);
+
+  // 1.2 Determine prediction based on the 1.1 probabilities
   bool prediction;
-    if (roboMemory_ptr->last_state == 1) {
-      if (roboMemory_ptr->probabilities[0] > roboMemory_ptr->probabilities[1]) {
+    if (memory.last_state == 1) {
+      if (day_to_day > day_to_night) {
           prediction = true;
-          roboMemory_ptr->decision = 0;
+          memory.decision = 0;
       } else {
           prediction = false;
-          roboMemory_ptr->decision = 1;
+          memory.decision = 1;
       }} 
     
     else {
-      if (roboMemory_ptr->probabilities[2] > roboMemory_ptr->probabilities[3]) {
+      if (night_to_night > night_to_day) {
           prediction = true;
-          roboMemory_ptr->decision = 2;
+          memory.decision = 2;
       } else {
           prediction = false;
-          roboMemory_ptr->decision = 3;
+          memory.decision = 3;
       }};
 
-      roboMemory_ptr->last_prediction = prediction;
+      memory.last_prediction = prediction;
 
 
   // Simple prediction policy: follow the spaceship computer's suggestions
@@ -56,40 +77,48 @@ bool RoboPredictor::predictTimeOfDayOnNextPlanet(
 
 void RoboPredictor::observeAndRecordTimeofdayOnNextPlanet(
     std::uint64_t nextPlanetID, bool timeOfDayOnNextPlanet) {
-  // Robo can consult/update data structures in its memory
-  // Example: access Robo's memory with roboMemory_ptr-><your RoboMemory
-  // content> 
 
-/*  2.1 Record the last observed state in last_state - day (true) or night (false) 
-    2.2 Retrieve transition probabilities based on last_state.
-    2.3 Predict the next state using the higher probability 
-    (e.g., if P_day_to_day > P_day_to_night, predict “day”). */
-
+  auto& memory = *roboMemory_ptr;
    if (timeOfDayOnNextPlanet == true){
-        roboMemory_ptr->last_state = 1;
+        memory.last_state = 1;
     } else {
-        roboMemory_ptr->last_state = 0;
+        memory.last_state = 0;
    }
 
-   if (roboMemory_ptr->last_prediction == timeOfDayOnNextPlanet) {
+   if (memory.last_prediction == timeOfDayOnNextPlanet) {
+    memory.probabilities[memory.decision] += 0.5;
+    memory.confidence[memory.decision] += 1;
+    if( memory.decision % 2 == 0  ){
+        memory.probabilities[memory.decision + 1] -= 0.5;    
+    } else {
+        memory.probabilities[memory.decision - 1] -= 0.5;
+    }
    }
    else {
-    roboMemory_ptr->probabilities[roboMemory_ptr->decision] -= 0.1;
-    if( roboMemory_ptr->decision % 2 == 0  ){
-        roboMemory_ptr->probabilities[roboMemory_ptr->decision + 1] += 0.1;
+    memory.probabilities[memory.decision] -= 0.3;
+    memory.confidence[memory.decision] -= 1;
+    if( memory.decision % 2 == 0  ){
+        memory.probabilities[memory.decision + 1] += 0.3;    
     } else {
-        roboMemory_ptr->probabilities[roboMemory_ptr->decision - 1] += 0.1;
+        memory.probabilities[memory.decision - 1] += 0.3;
     }
    }
 
-/*  3.1 Compare the prediction with the actual observed state. */
+   memory.round_count += 1;
+   if (memory.round_count > 99){
+    memory.round_count = 0;
+    for (auto& probabliity : memory.probabilities){
+       if (probabliity > 0.9){
+           probabliity = 0.9;
+       } else if (probabliity < 0.1){
+           probabliity = 0.1;
+       }
+    }
+    for (auto& confidence : memory.confidence){
+        confidence *= 0.9;
+    }
 
-  // It is important not to exceed the computation cost threshold while making
-  // predictions and updating RoboMemory. The computation cost of prediction and
-  // updating RoboMemory is calculated by the playground automatically and
-  // printed together with accuracy at the end of the evaluation (see main.cpp
-  // for more details).
-
+   }
   // Simple prediction policy: do nothing
 }
 
