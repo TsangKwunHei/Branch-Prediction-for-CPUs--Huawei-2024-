@@ -23,11 +23,7 @@ struct RoboPredictor::RoboMemory {
   float P_night_day_to_night = 0.5;
   std::array<float, 4> confidence = {1.0,1.0,1.0,1.0};
   std::vector<int> last_2 = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
-
-
   const size_t limit = 5;
-
-
   float confidence_weight = 0.1;
   const float increment = 0.05;
   const float decrement = 0.03;
@@ -38,6 +34,28 @@ struct RoboPredictor::RoboMemory {
 
 bool RoboPredictor::predictTimeOfDayOnNextPlanet(
     std::uint64_t nextPlanetID, bool spaceshipComputerPrediction) {
+    
+    /* TODO STEP 1 
+    The predictor gathers information based on the 
+        1 branch’s history (past branch outcomes) 
+        2 the program counter (PC), 
+        which identifies where the branch is in the code. */
+
+    /* STEP 2 
+    TAGE starts by looking at a simple, backup prediction table called the bimodal table. 
+    This table uses a basic strategy to predict if the branch is likely to be taken.
+    */
+
+    // Look at SpaceShipComputerPrediction : 77% or current_prototype : 79%
+
+   /* STEP 3 
+   TAGE also looks at more advanced table (e.g., short-term, mid-term, long-term history) 
+   to get deeper insights based on the current and past patterns. Using these tables, 
+   TAGE combines predictions, prioritizing the most confident predictions 
+   (often based on longer histories) to form its initial prediction. */
+
+   // Long term table
+
 
   // 1.1
   auto& memory = *roboMemory_ptr;
@@ -67,16 +85,51 @@ bool RoboPredictor::predictTimeOfDayOnNextPlanet(
       }};
 
       memory.last_prediction = prediction;
+/*
+	TAGE makes a final prediction by choosing 
+    1 the most confident
+    2 longest history match available.
 
 
-  // Simple prediction policy: follow the spaceship computer's suggestions
-  // return spaceshipComputerPrediction;
-  // now for i am using my own prediction
+	If the prediction is “taken” (meaning the branch will be executed),
+        TAGE predicts that path; 
+    if “not taken,” 
+        it predicts the branch will be skipped.
+*/
+
+// Combine predictions process
+// Longest history match()
+// most_confident_prediction() 
+// decision()
+
   return prediction;
 }
 
 void RoboPredictor::observeAndRecordTimeofdayOnNextPlanet(
     std::uint64_t nextPlanetID, bool timeOfDayOnNextPlanet) {
+
+/*
+The CPU executes the branch, and we see if TAGE’s prediction was correct.
+
+    If correct: 
+    TAGE reinforces this prediction,
+    by increasing the confidence for that particular history pattern.
+
+    If incorrect: 
+    TAGE updates its records, noting the wrong prediction. 
+
+        This also triggers a potential feedback adjustment:
+            TAGE can either :
+            replace the incorrect prediction entry if it was weak, 
+            or 
+            reduce its confidence if it was confident but wrong.
+
+    Over time, TAGE learns which history patterns are more reliable,
+    by keeping entries that are frequently correct and adjusting, 
+    or replacing those that are frequently wrong.
+ */
+// if incorrect ()
+// feedback_adjustment()
 
   auto& memory = *roboMemory_ptr;
    if (timeOfDayOnNextPlanet == true){
