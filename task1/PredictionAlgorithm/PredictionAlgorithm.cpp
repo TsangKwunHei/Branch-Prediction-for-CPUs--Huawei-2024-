@@ -10,6 +10,8 @@
 
 #include "PredictionAlgorithm.hpp"
 
+std::vector<int> long_term_predictTable(16, 0);
+
 struct RoboPredictor::RoboMemory {
   // Place your RoboMemory content here
   // Note that the size of this data structure can't exceed 64KiB!
@@ -17,10 +19,6 @@ struct RoboPredictor::RoboMemory {
   int last_state = 0 | 1;
   // {P_day_to_day, P_day_to_night, P_night_to_night, P_night_to_day};
   std::array<float, 4> probabilities = {0.6, 0.6, 0.4, 0.4};
-  float P_day_night_to_day = 0.5;
-  float P_day_night_to_night = 0.5;
-  float P_night_day_to_day = 0.5;
-  float P_night_day_to_night = 0.5;
   std::array<float, 4> confidence = {1.0,1.0,1.0,1.0};
   std::vector<int> last_2 = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
   const size_t limit = 5;
@@ -30,28 +28,26 @@ struct RoboPredictor::RoboMemory {
   bool last_prediction;
   int decision = 0 | 1 | 2 | 3;
   int round_count = 0;
+
+    // 1.1 Long Table 
+    // Update History: Store observed day/night patterns in a structured table.
+    // This should record historical patterns instead of adjusting individual probabilities directly.
+
+    // 1.2 Push Bits: Every new outcome (branch result) should be added to the long-term history table.
+    // Use `push_bit` to append the latest outcome (e.g., day or night).
+
+    // 1.3 Feedback Loop:
+    //   Correct Prediction: Increase the confidence level for correct predictions in the `confidence` array.
+    //   Incorrect Prediction: Apply a replacement policy for low-confidence entries:
+    //     - Low-confidence predictions should be replaced or deprioritized.
+    //     - Adjust confidence to reflect reliability based on recent predictions.
 };
+
+
 
 bool RoboPredictor::predictTimeOfDayOnNextPlanet(
     std::uint64_t nextPlanetID, bool spaceshipComputerPrediction) {
     
-    /* TODO STEP 1 
-    The predictor gathers information based on the 
-        1 branch’s history (past branch outcomes) 
-        2 the program counter (PC), 
-        which identifies where the branch is in the code. */
-
-    /* STEP 2 
-    TAGE starts by looking at a simple, backup prediction table called the bimodal table. 
-    This table uses a basic strategy to predict if the branch is likely to be taken.
-    */
-   // Look at SpaceShipComputerPrediction : 77% or current_prototype : 79%
-
-
-   // Exercise 1 Long term table Update
-   // Inialize variables
-   // Prediction 
-   // Feedback loop
 
 
   // 1.1
@@ -95,6 +91,12 @@ bool RoboPredictor::predictTimeOfDayOnNextPlanet(
         it predicts the branch will be skipped.
 */
 
+bool getPrediction(int index) {
+    if (long_term_predictTable[index] >= 0){
+        return long_term_predictTable[index] >= 0;}
+    else {return false;}
+}
+
 // Combine predictions process
 // Longest history match()
 // most_confident_prediction() 
@@ -126,6 +128,7 @@ The CPU executes the branch, and we see if TAGE’s prediction was correct.
     by keeping entries that are frequently correct and adjusting, 
     or replacing those that are frequently wrong.
  */
+
 // if incorrect ()
 // feedback_adjustment()
 
