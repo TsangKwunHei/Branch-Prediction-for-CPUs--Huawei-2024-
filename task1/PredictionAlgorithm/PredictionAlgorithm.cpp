@@ -4,13 +4,9 @@
 #include <iostream>
 #include <memory>
 #include <deque>
-
-// This file contains a template for the implementation of Robo prediction
-// algorithm
-
 #include "PredictionAlgorithm.hpp"
 
-std::vector<int> long_term_predictTable(16, 0);
+
 
 struct RoboPredictor::RoboMemory {
   // Place your RoboMemory content here
@@ -29,79 +25,38 @@ struct RoboPredictor::RoboMemory {
   int decision = 0 | 1 | 2 | 3;
   int round_count = 0;
 
-    // 1.1 Long Table 
-    // Update History: Store observed day/night patterns in a structured table.
-    // This should record historical patterns instead of adjusting individual probabilities directly.
-
-    // 1.2 Push Bits: Every new outcome (branch result) should be added to the long-term history table.
-    // Use `push_bit` to append the latest outcome (e.g., day or night).
-
-    // 1.3 Feedback Loop:
-    //   Correct Prediction: Increase the confidence level for correct predictions in the `confidence` array.
-    //   Incorrect Prediction: Apply a replacement policy for low-confidence entries:
-    //     - Low-confidence predictions should be replaced or deprioritized.
-    //     - Adjust confidence to reflect reliability based on recent predictions.
+  /*
+  array long_table 
+  circular buffer
+  push_bit
+  confidence long_table
+  */
 };
-
-
 
 bool RoboPredictor::predictTimeOfDayOnNextPlanet(
     std::uint64_t nextPlanetID, bool spaceshipComputerPrediction) {
-    
-
-
   // 1.1
-  auto& memory = *roboMemory_ptr;
-  float day_to_day = memory.probabilities[0] * (1 + memory.confidence_weight * memory.confidence[0]);
-  float day_to_night = memory.probabilities[1] * (1 + memory.confidence_weight * memory.confidence[1]);
-  float night_to_night = memory.probabilities[2] * (1 + memory.confidence_weight * memory.confidence[2]);
-  float night_to_day = memory.probabilities[3] * (1 + memory.confidence_weight * memory.confidence[3]);
+  // Step 1     Get basic prediction from bimodal 
+  // Step 2     Look for better predictions in more advanced tables
 
-  // 1.2 Determine prediction based on the 1.1 probabilities
+  // Step 3     If we found a matching entry 
+  //                Get the prediction from our best matching table
+  //                Convert the counter to a yes/no prediction (>=0 means predict taken)
+  //                If we have a second-best matching table, get its prediction too
+  //                Check if this alternate prediction is confident
+  //                Calculate which table we should use for our final prediction
+  //                Should we use the alternate prediction instead of our best match?
+  
+  // Step 4         Make the final prediction!
+  //                We use the longest match prediction if:
+  //                - The selector says not to use alternate (use_alt is false) OR
+  //                - The longest match is very confident
+  //                    else, use the alternate prediction
+
+  // Step 5         Set confidence levels for our final prediction
+  //                If we didn't find any matches, use bimodal prediction
+
   bool prediction;
-    if (memory.last_state == 1) {
-      if (day_to_day > day_to_night) {
-          prediction = true;
-          memory.decision = 0;
-      } else {
-          prediction = false;
-          memory.decision = 1;
-      }} 
-    
-    else {
-      if (night_to_night > night_to_day) {
-          prediction = true;
-          memory.decision = 2;
-      } else {
-          prediction = false;
-          memory.decision = 3;
-      }};
-
-      memory.last_prediction = prediction;
-
-/*
-	TAGE makes a final prediction by choosing 
-    1 the most confident
-    2 longest history match available.
-
-
-	If the prediction is “taken” (meaning the branch will be executed),
-        TAGE predicts that path; 
-    if “not taken,” 
-        it predicts the branch will be skipped.
-*/
-
-bool getPrediction(int index) {
-    if (long_term_predictTable[index] >= 0){
-        return long_term_predictTable[index] >= 0;}
-    else {return false;}
-}
-
-// Combine predictions process
-// Longest history match()
-// most_confident_prediction() 
-// decision()
-
   return prediction;
 }
 
@@ -109,24 +64,11 @@ void RoboPredictor::observeAndRecordTimeofdayOnNextPlanet(
     std::uint64_t nextPlanetID, bool timeOfDayOnNextPlanet) {
 
 /*
-The CPU executes the branch, and we see if TAGE’s prediction was correct.
-
-    If correct: 
-    TAGE reinforces this prediction,
-    by increasing the confidence for that particular history pattern.
-
-    If incorrect: 
-    TAGE updates its records, noting the wrong prediction. 
-
-        This also triggers a potential feedback adjustment:
-            TAGE can either :
-            replace the incorrect prediction entry if it was weak, 
-            or 
-            reduce its confidence if it was confident but wrong.
-
-    Over time, TAGE learns which history patterns are more reliable,
-    by keeping entries that are frequently correct and adjusting, 
-    or replacing those that are frequently wrong.
+    if last prediction is correct
+        increase ++ confidence
+    if not 
+        confidence -= 1
+        replace low corresponding confidence for entry   
  */
 
 // if incorrect ()
