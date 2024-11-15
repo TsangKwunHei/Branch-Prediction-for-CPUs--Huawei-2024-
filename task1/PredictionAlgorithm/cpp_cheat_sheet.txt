@@ -1,0 +1,73 @@
+/*
+    ===========================
+    C++ Preprocessor Directives Cheat Sheet
+    ===========================
+
+    1. #define (Macro Definition)
+    ------------------------------
+    - Creates macros for constant values or code substitution.
+    - Use for defining constants or reusable code snippets.
+    Example:
+    #define PI 3.14
+    #define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+    2. #include (File Inclusion)
+    ------------------------------
+    - Includes code from another file (e.g., header files).
+    - Use for libraries or sharing common code across files.
+    Example:
+    #include <iostream>  // Standard library
+    #include "myfile.h"  // Custom header
+
+    3. #ifdef / #ifndef (Conditional Compilation)
+    ------------------------------
+    - Compiles code only if a macro is defined (#ifdef) or not defined (#ifndef).
+    - Use for debugging or platform-specific code.
+    Example:
+    #ifdef DEBUG
+        std::cout << "Debug mode\n";
+    #endif
+
+    4. #if / #else / #elif / #endif
+    ------------------------------
+    - Enables complex conditional compilation with logic.
+    - Use for conditional compilation based on macros or constants.
+    Example:
+    #if defined(WINDOWS)
+        // Windows-specific code
+    #elif defined(LINUX)
+        // Linux-specific code
+    #endif
+
+    5. #pragma (Compiler-Specific Instructions)
+    ------------------------------
+    - Provides special instructions to the compiler.
+    - Use for optimizations or avoiding duplicate header inclusions.
+    Example:
+    #pragma once  // Ensures the header file is included only once.
+
+    6. #undef (Undefine Macro)
+    ------------------------------
+    - Removes a previously defined macro.
+    - Use to avoid conflicts or redefine macros.
+    Example:
+    #define TEMP 100
+    #undef TEMP
+
+    7. #error (Error Message)
+    ------------------------------
+    - Generates a custom error message during compilation.
+    - Use for catching invalid conditions in the code.
+    Example:
+    #ifdef OLD_VERSION
+    #error "Old version is not supported!"
+    #endif
+
+    8. #line (Change Line Number and File Name)
+    ------------------------------
+    - Modifies the line number or file name in error messages.
+    - Use for debugging or simulating code from another file.
+    Example:
+    #line 100 "custom_file.cpp"
+
+*/
