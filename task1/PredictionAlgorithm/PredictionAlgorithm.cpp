@@ -11,58 +11,30 @@
 #include "PredictionAlgorithm.hpp"
 
 struct RoboPredictor::RoboMemory {
-    // * ========================   PART 1   =================================
-    // * Setting up history tables and speculative branches.
+// * |  =====================================================================================================
+// * |  ======================================  I INNIT   ===================================================
+// * |                             Find matching tables and generate predictions                       
+// * | ======================================   I INNIT   ===================================================
+// * | ======================================================================================================
 
-    // Configure TAGE History Sizes (Different Lengths for Geometric Sequence)
-    static const int MIN_HISTORY = 4;
-    static const int MAX_HISTORY = 100;
-    static const int total_number_of_history_tables = 5;
 
-    // History tables containing individual histories
-    std::array<std::vector<bool>, total_number_of_history_tables> history_tables;
-    std::array<int, total_number_of_history_tables> confidence;
-    std::array<int, total_number_of_history_tables> history_tables_sizes;
-
-    // Constructor to initialize member variables
-    RoboMemory()
-        : head(0),
-          size(1024),
-          speculative_bits(0),
-          fold_history_counter(1),
-          last_outcome(false),
-          hit_bank(0),
-          alt_bank(0),
-          first_table_match_j(0),
-          second_table_match_j(0),
-          finale_prediction(false),
-          finale_prediction_bank(0) {
-        buffer.resize(size);
-        confidence.fill(0);
-        history_tables_sizes = {MIN_HISTORY, MIN_HISTORY * 2, MIN_HISTORY * 4, MIN_HISTORY * 8, MIN_HISTORY * 16};
-        foleded_history_tables_sizes.fill(0);
-    }
-
-    int max_speculative_branches = 5;
-
-    // Long History Register (Circular Buffer for History)
-    std::vector<bool> buffer;
-    int head;
-    int size;
-
-    void addToBuffer(bool value) {
-        buffer[head] = value;
-        head = (head + 1) % size;
-    }
-
-    void add_to_history_tables(bool data) {
-        // Push data into all history tables
+    void add_to_history_tables(bool data, int branch_address) {
+        // Update all history tables
         for (int i = 0; i < total_number_of_history_tables; i++) {
-            history_tables[i].push_back(data);
+            // Compute the tag for the current entry
+            int tag = hashInt1(branch_address, history_tables[i].size());
+            // Create a new entry with the outcome and computed tag
+            Entry new_entry = {data, 5, tag};
+            // Add the new entry to the current table
+            history_tables[i].push_back(new_entry);
+            // Ensure the table does not exceed its maximum size
             if (history_tables[i].size() > history_tables_sizes[i]) {
                 history_tables[i].erase(history_tables[i].begin());
             }
         }
+    }
+    int hashInt1(int branch_address, int history_size) {
+    return (branch_address ^ history_size) * 2654435761u;
     }
 
     // Rewind (not implemented in this context)
@@ -71,110 +43,170 @@ struct RoboPredictor::RoboMemory {
     }
 
     // Retire speculative bits (not fully implemented)
-    int speculative_bits;
+    int speculative_bits = 0;
+
     void retire(int num_bits_to_retire) {
-        int index = head - speculative_bits;
-        add_to_history_tables(buffer[index % size]);
         // Additional implementation can be added if needed
     }
 
-    // Hash function for branch address and history
-    int entry_size = 3;
-    int hashInt1(int branch_num, bool bit) {
-        int combined = (branch_num << 1) | bit;
-        return combined * 2654435761u;
-    }
 
-    // Folding the history tables
-    int fold_parameters = 2; // Fold to half size
-    std::array<std::vector<std::pair<bool, int>>, total_number_of_history_tables> foleded_history_tables;
-    std::array<int, total_number_of_history_tables> foleded_history_tables_sizes;
+// * |  =================================   DEFINE   ====================================================
+// * |  =================================   DEFINE   ====================================================
 
-    std::vector<std::pair<bool, int>> fold_history(
-        const std::vector<bool>& list,
-        int branch_num,
-        bool bit) {
-        int compressed_size = list.size() / fold_parameters;
-        std::vector<std::pair<bool, int>> compressed(compressed_size);
-        int history_hash = hashInt1(list.size(), true);
-        int folded_history_hash = hashInt1(compressed_size, true);
 
-        for (int i = 0; i + 1 < list.size(); i += fold_parameters) {
-            int folded_tag = hashInt1(branch_num, bit) + folded_history_hash + history_hash;
-            compressed[i / fold_parameters] = std::make_pair(list[i] ^ list[i + 1], folded_tag);
+    // Configure TAGE History Sizes (Different Lengths for Geometric Sequence)
+    static const int MIN_HISTORY = 8;
+    static const int MAX_HISTORY = 100;
+    static const int fold_factor = 4;
+    static const int total_number_of_history_tables = 5;
+    struct Entry {
+        bool branch_outcome; // True or False outcome of the branch
+        int confidence;      // Confidence counter
+        int tag;             // Encoded tag (branch address + recent history)
+
+        // Constructor for initializing an entry
+        Entry(bool outcome, int initial_confidence, int tag_value)
+            : branch_outcome(outcome), confidence(initial_confidence), tag(tag_value) {}
+    };
+
+    // History tables containing individual histories
+    std::array<std::vector<Entry>, total_number_of_history_tables> history_tables; // HISTORY BOOK 
+    std::array<int, total_number_of_history_tables> history_tables_sizes; // num of histories
+    std::array<std::vector<int>, total_number_of_history_tables>& folded_history_tables; 
+    std::array<int, total_number_of_history_tables> foleded_history_tables_sizes{0,5};
+
+
+// * |  2 ===================================  2 FOLD   ====================================================
+// * |  2 ===================================  2 FOLD   ====================================================
+
+
+void FoldHistory(
+    const std::array<std::vector<Entry>, total_number_of_history_tables>& history_tables,
+    std::array<std::vector<int>, total_number_of_history_tables>& folded_history_tables,
+    int fold_factor) {
+    // Loop through each history table
+    for (size_t table_idx = 0; table_idx < total_number_of_history_tables; ++table_idx) {
+        const auto& current_table = history_tables[table_idx];
+        auto& current_folded_table = folded_history_tables[table_idx];
+
+        // Ensure folded table size matches the expected folded size
+        size_t folded_size = current_table.size() / fold_factor;
+        if (current_folded_table.size() != folded_size) {
+            current_folded_table.resize(folded_size, 0);
         }
-        return compressed;
-    }
 
-    void fold_all_history(int branch_num, bool bit) {
-        for (int i = 0; i < total_number_of_history_tables; i++) {
-            foleded_history_tables[i] = fold_history(history_tables[i], branch_num, bit);
-            foleded_history_tables_sizes[i] = history_tables_sizes[i] / fold_parameters;
+        // Update the folded table incrementally
+        for (size_t i = 0; i < folded_size; ++i) {
+            // Calculate indices for the fold segment
+            size_t start_index = i * fold_factor;
+            size_t end_index = std::min(start_index + fold_factor, current_table.size());
+
+            // Update the folded entry (using XOR of tags within the fold segment)
+            int folded_value = 0;
+            for (size_t j = start_index; j < end_index; ++j) {
+                folded_value ^= current_table[j].tag; // XOR tags to compute folded value
+            }
+
+            // Store the updated folded value
+            current_folded_table[i] = folded_value;
         }
     }
+}
 
-    int fold_history_counter;
-    bool last_outcome;
-    void push_to_history_tables(int branch_num, bool outcome) {
-        hashInt1(branch_num, outcome);
 
-        if (fold_history_counter == 1) {
-            last_outcome = outcome;
-            fold_history_counter += 1;
-        } else {
-            bool folded_outcome = last_outcome ^ outcome;
-            fold_history_counter = 1;
-            for (int i = 0; i < total_number_of_history_tables; i++) {
-                int history_hash = hashInt1(history_tables_sizes[i], true);
-                int folded_tag = hashInt1(branch_num, outcome) + history_hash;
 
-                std::pair<bool, int> pair = std::make_pair(folded_outcome, folded_tag);
-                foleded_history_tables[i].push_back(pair);
-                if (foleded_history_tables[i].size() > foleded_history_tables_sizes[i]) {
-                    foleded_history_tables[i].erase(foleded_history_tables[i].begin());
+    // TODO tag function 
+    // Constructor to initialize member variables
+
+    int max_speculative_branches = 5;
+    int history_tables_sizes[total_number_of_history_tables] = {MIN_HISTORY, MIN_HISTORY * 2, MIN_HISTORY * 4, MIN_HISTORY * 8, MIN_HISTORY * 16};
+    // Long History Register (Circular Buffer for History)
+    std::vector<bool> buffer {0, 1024};
+    int head = 0;
+    int size = 1024;
+
+    void addToBuffer(bool value) {
+        buffer[head] = value;
+        head = (head + 1) % size;
+    }
+
+
+
+
+
+
+// * | |  =====================================================================================================| |
+// * | | ====================================  III FEEDBACK   =================================================| |
+// * | |                            Find matching tables and generate predictions                       
+// * | |====================================   III FEEDBACK   =================================================| |
+// * | | ======================================================================================================| |
+
+
+
+
+struct MatchResult {
+    int hit_bank;    // Index of the longest matching table
+    int alt_bank;    // Index of the second-longest matching table
+    int hit_index;   // Matching entry index in the longest matching table
+    int alt_index;   // Matching entry index in the second-longest matching table
+};
+
+// Hash function for tagging 
+int HashTag(int branch_address, int global_history_bits, int history_length) {
+    return branch_address ^ (global_history_bits & ((1 << history_length) - 1));
+}
+
+MatchResult CheckLongestMatchingTable(
+    const std::array<std::vector<Entry>, total_number_of_history_tables>& history_tables,
+    int branch_address,
+    int global_history_bits) {
+    MatchResult result = {-1, -1, -1, -1}; // Initialize result with invalid indices
+    int best_match_length = -1;           // Best history length for the longest match
+    int second_best_match_length = -1;    // Best history length for the second-longest match
+
+    // Iterate through each table, starting from the longest history table
+    for (size_t table_idx = 0; table_idx < total_number_of_history_tables; ++table_idx) {
+        const auto& current_table = history_tables[table_idx];
+        int history_length = history_tables_sizes[table_idx];
+
+        // Search through the entries in the current table
+        for (size_t entry_idx = 0; entry_idx < current_table.size(); ++entry_idx) {
+            const Entry& entry = current_table[entry_idx];
+
+            // Check if the tag matches the incoming branch address and global history
+            if (entry.tag == HashTag(branch_address, global_history_bits, history_length)) {
+                if (history_length > best_match_length) {
+                    // Update second-best match to the current best match
+                    second_best_match_length = best_match_length;
+                    result.alt_bank = result.hit_bank;
+                    result.alt_index = result.hit_index;
+
+                    // Update the longest match
+                    best_match_length = history_length;
+                    result.hit_bank = static_cast<int>(table_idx);
+                    result.hit_index = static_cast<int>(entry_idx);
+                } else if (history_length > second_best_match_length) {
+                    // Update the second-best match
+                    second_best_match_length = history_length;
+                    result.alt_bank = static_cast<int>(table_idx);
+                    result.alt_index = static_cast<int>(entry_idx);
                 }
             }
         }
     }
 
-    int hit_bank; // Longest matching table
-    int alt_bank; // Second longest matching table
-    int first_table_match_j; // Index in longest matching table
-    int second_table_match_j; // Index in second longest matching table
+    return result;
+}
 
-    // * ======================   II PREDICTOR   ============================
-    // * Find matching tables and generate predictions
 
-    void find_two_longest_table_matches(int branch_num, bool bit) {
-        bool found_first_match = false;
-        bool found_second_match = false;
-        int current_bit = hashInt1(branch_num, bit);
 
-        for (int i = total_number_of_history_tables - 1; i >= 0 && !found_second_match; i--) {
-            for (int j = static_cast<int>(foleded_history_tables[i].size()) - 1; j >= 0; j--) {
-                int index = foleded_history_tables[i][j].second;
-                if (index == current_bit) {
-                    if (!found_first_match) {
-                        found_first_match = true;
-                        first_table_match_j = j;
-                        hit_bank = i;
-                    } else {
-                        found_second_match = true;
-                        second_table_match_j = j;
-                        alt_bank = i;
-                        break;
-                    }
-                }
-            }
-        }
-    }
 
     bool generate_prediction(int bank) {
         int pattern_true = 0;
         int pattern_false = 0;
         int size = static_cast<int>(history_tables[bank].size());
         for (int i = size - 1; i >= 0; i--) {
-            if (history_tables[bank][i]) {
+            if (history_tables[bank][i].branch_outcome) {
                 pattern_true += 1;
             } else {
                 pattern_false += 1;
@@ -185,8 +217,8 @@ struct RoboPredictor::RoboMemory {
     }
 
     // Making the final prediction
-    bool finale_prediction;
-    int finale_prediction_bank;
+    bool finale_prediction = false;
+    int finale_prediction_bank = 0;
 
     void choosing_predictions(bool& prediction, int branch_num) {
         int prediction_strength;
@@ -203,8 +235,18 @@ struct RoboPredictor::RoboMemory {
             finale_prediction = prediction;
         }
     }
-    // * ===================    III FEEDBACK   =========================
-    // * receive results and update tables
+
+
+
+
+// * | | | ====================================================================================================| | |
+// * | | | ==================================  III FEEDBACK   =================================================| | |
+// * | | |                       Find matching tables and generate predictions                       
+// * | | |==================================   III FEEDBACK   =================================================| | |
+// * | | | ====================================================================================================| | |
+
+
+
 
     // Feedback loop to learn from prediction outcomes
     std::vector<bool> speculative;
@@ -247,13 +289,12 @@ struct RoboPredictor::RoboMemory {
         } else {
             speculative_checkpoint();
         }
-        push_new_bits(actual);
-        push_to_history_tables(branch, actual);
+        add_to_history_tables(actual, branch);
+        FoldHistory(history_tables, foleded_history_tables, fold_factor);
     }
 
-    void push_new_bits(bool outcome) {
-        add_to_history_tables(outcome);
-    }
+  
+    
 };
 
 bool RoboPredictor::predictTimeOfDayOnNextPlanet(
