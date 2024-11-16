@@ -6,9 +6,11 @@
 #include <iostream>
 #include <vector>
 
+
+
 #define BIT_MASK(__TYPE__, __ONE_COUNT__) \
-((__TYPE__)(-(__ONE_COUNT__ !=0))) & \
-(((__TYPE__)-1)>>((sizeof(__TYPE__) * CHAR_BIT)-(__ONE_COUNT__)))
+  ((__TYPE__)(-((__ONE_COUNT__) != 0))) & \
+      (((__TYPE__)-1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
 
 
 struct RoboPredictor::RoboMemory {
@@ -46,9 +48,10 @@ void init_tables() {
     RoboMemory() {
         init_tables();
     }
-    void make_prediction(uint64_t branch_id) {
+bool make_prediction(uint64_t branch_id) {
     uint64_t indicies[NUM_TABLES];
     uint64_t tags[NUM_TABLES];
+
 
     for (int table_num = 0; table_num < NUM_TABLES; table_num++ ) {
         int table_size = MAX_TABLE_SIZE >> table_num;
@@ -81,12 +84,11 @@ void init_tables() {
             found = true;
             break;
             };
-        
-
     };
     if (found == false) {
     given_prediction_table = -1 ;
     };
+    return finale_prediction;
     };
 
     void update(uint64_t branch_id, bool outcome) {
@@ -152,9 +154,8 @@ bool RoboPredictor::predictTimeOfDayOnNextPlanet(
   // Robo can consult data structures in its memory while predicting.
   // Example: access Robo's memory with roboMemory_ptr-><your RoboMemory
   // content>
-    roboMemory_ptr->make_prediction(nextPlanetID);
   // Simple prediction policy: follow the spaceship computer's suggestions
-  return roboMemory_ptr->prev_prediction;;
+  return roboMemory_ptr->make_prediction(nextPlanetID);
 }
 
 void RoboPredictor::observeAndRecordTimeofdayOnNextPlanet(
