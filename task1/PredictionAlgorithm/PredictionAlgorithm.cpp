@@ -1,70 +1,149 @@
 // This file contains a template for the implementation of Robo prediction
 // algorithm
-
 #include "PredictionAlgorithm.hpp"
+#include <limits.h> /* CHAR_BIT */
+#include <cmath>
+#include <iostream>
+#include <vector>
+
+#define BIT_MASK(__TYPE__, __ONE_COUNT__) \
+((__TYPE__)(-(__ONE_COUNT__ !=0))) & \
+(((__TYPE__)-1)>>((sizeof(__TYPE__) * CHAR_BIT)-(__ONE_COUNT__)))
+
 
 struct RoboPredictor::RoboMemory {
     //struct
     struct Entry {
         //Contains uint64_t tag and int confidence counter. 
-        int tag;
+        int64_t tag;
+        int64_t confidence_counter;
     };
-    /*
-    1 #define BITMASK() \
-    max_table_size
-    num_history_table = 1
-    const int tag_length = 12;
-    max_confidence = 3;
+    static constexpr int MAX_TABLE_SIZE = 624;
+    static constexpr int NUM_TABLES = 3;
+    static constexpr int tag_length = 12;
+    static constexpr int max_confidence = 3;
     
 
-
-    Define integer number of table given prediction. 
-Define Boolean  prev_prediction 
-set both to 0. 
-
-Define a vector which is called table. It contains a vector of table entry. 
-
-Define global history. It's a shift register with uint64_t. 
-
-void Initialize tables, 
-loop through each history table, 
-assign them incremental table_ids, 
-and decremental table size by a power of 2 from MAX_HISTORY_TABLE_SIZE
-then set the table size : push to the tables an entire factor of table entry which has table size defined, 
-and inside the for loop of for each entry in the table size, 
-	define the corresponding tag and counter as 0.
+    bool found = false;
+    int given_prediction_table = 0;
+    bool prev_prediction = false;
+    int64_t global_history = 0;
+    std::vector<std::vector<Entry>> tables;
 
 
-    */
+void init_tables() {
+    for (int table_num = 0; table_num < NUM_TABLES; table_num++ ) {
+        int table_size = MAX_TABLE_SIZE >> table_num;
+        tables.push_back(std::vector<Entry>(table_size));
+        for (int entry_id = 0; entry_id < table_size; entry_id++) {
+            tables[table_num][entry_id].tag=0;
+            tables[table_num][entry_id].confidence_counter=0;
+        }
+    };
+};
 
-    void make_prediction(uint64_t pc) {
 
-        /*
-indicies [table_num] =
-(planetID ^ // XOR planetiD with a portion of global history 
-(ghist & 
-((table_num >0) ? 
-BIT_MASK(uint64_t, (1 << table_num)) : 0))) % 
-tableSize;  // modulo tableSize to ensure index falls within the table’s */
+    RoboMemory() {
+        init_tables();
+    }
+    void make_prediction(uint64_t branch_id) {
+    uint64_t indicies[NUM_TABLES];
+    uint64_t tags[NUM_TABLES];
 
-        /*
-        Final_prediction = false
-Found = false
-Perform prediction and compute final prediction
-Prediction
-For each table    
- If tables[table_num][indicies[table_num]].tag == tags[table_num] 
-  Access confidence with tables[table_num][indicies[table_num].counter
-   If confidence >= MAX_CONFIDENCE + ½
-    make it a prediction : final_prediction = true
-Save table_num that made the pred
-prev_prediction = final_prediction;
-Found = true;
-Break;
-If (!found) num_of_table_given_prev_prediction = -1;
-Return final_prediction;
+    for (int table_num = 0; table_num < NUM_TABLES; table_num++ ) {
+        int table_size = MAX_TABLE_SIZE >> table_num;
+        BIT_MASK(uint64_t, tag_length);
 
-        */
+        indicies[table_num] = 
+            (branch_id ^ 
+            (global_history & 
+            ((table_num>0)? 
+            BIT_MASK(uint64_t, (1 << table_num)) : 0))) %
+            table_size;
+
+        tags[table_num] = 
+            (branch_id ^ 
+            (global_history & 
+            ((table_num>0)? 
+            BIT_MASK(uint64_t, (1 << table_num)) : 0))) &
+            BIT_MASK(uint64_t, tag_length);
+    };
+    found = false;
+
+    bool finale_prediction = false;
+    for (int table_num = 0; table_num < NUM_TABLES; table_num++ ) {
+        if (tables[table_num][indicies[table_num]].tag == tags[table_num]) {
+            if (tables[table_num][indicies[table_num]].confidence_counter > (max_confidence+1)/2) {
+                finale_prediction = true;
+            };
+            given_prediction_table = table_num;
+            prev_prediction = finale_prediction;
+            found = true;
+            break;
+            };
+        
+
+    };
+    if (found == false) {
+    given_prediction_table = -1 ;
+    };
+    };
+
+    void update(uint64_t branch_id, bool outcome) {
+        
+        uint64_t indicies[NUM_TABLES];
+        uint64_t tags[NUM_TABLES];
+
+        for (int table_num = 0; table_num < NUM_TABLES; table_num++ ) {
+        int table_size = MAX_TABLE_SIZE >> table_num;
+        BIT_MASK(uint64_t, tag_length);
+        
+        indicies[table_num] = 
+            (branch_id ^ 
+            (global_history & 
+            ((table_num>0)? 
+            BIT_MASK(uint64_t, (1 << table_num)) : 0))) %
+            table_size;
+
+        tags[table_num] = 
+            (branch_id ^ 
+            (global_history & 
+            ((table_num>0)? 
+            BIT_MASK(uint64_t, (1 << table_num)) : 0))) &
+            BIT_MASK(uint64_t, tag_length);
+    };
+
+
+    int id = 0; 
+    global_history = (global_history << 1) | (outcome ? 1:0);
+    
+    if (given_prediction_table>=0) {
+        if (prev_prediction == outcome) {
+                id = given_prediction_table;
+        if (outcome == true and tables[id][indicies[id]].confidence_counter < max_confidence) {
+            tables[id][indicies[id]].confidence_counter ++ ;
+        } else if (outcome == false and tables[id][indicies[id]].confidence_counter > 0) {
+            tables[id][indicies[id]].confidence_counter -- ;
+        } 
+    } else {
+        if (id < NUM_TABLES-1) {
+            id = given_prediction_table +1;
+        tables[id][indicies[id]].tag = tags[id];
+        tables[id][indicies[id]].confidence_counter = (outcome) ? 2:1;
+        } else { 
+            if (outcome == true and tables[id][indicies[id]].confidence_counter < max_confidence) {
+                tables[id][indicies[id]].confidence_counter ++ ;
+            } else 
+            if (outcome == false and tables[id][indicies[id]].confidence_counter > 0) {
+                tables[id][indicies[id]].confidence_counter -- ;
+            };
+        } 
+    };
+    } else { 
+        id = 0; 
+        tables[id][indicies[id]].tag = tags[id];
+        tables[id][indicies[id]].confidence_counter = (outcome) ? 2:1;
+    }
     };
 };
 
@@ -73,9 +152,9 @@ bool RoboPredictor::predictTimeOfDayOnNextPlanet(
   // Robo can consult data structures in its memory while predicting.
   // Example: access Robo's memory with roboMemory_ptr-><your RoboMemory
   // content>
-
+    roboMemory_ptr->make_prediction(nextPlanetID);
   // Simple prediction policy: follow the spaceship computer's suggestions
-  return spaceshipComputerPrediction;
+  return roboMemory_ptr->prev_prediction;;
 }
 
 void RoboPredictor::observeAndRecordTimeofdayOnNextPlanet(
@@ -83,7 +162,7 @@ void RoboPredictor::observeAndRecordTimeofdayOnNextPlanet(
   // Robo can consult/update data structures in its memory
   // Example: access Robo's memory with roboMemory_ptr-><your RoboMemory
   // content>
-
+  roboMemory_ptr->update(nextPlanetID, timeOfDayOnNextPlanet);
 
 }
 
