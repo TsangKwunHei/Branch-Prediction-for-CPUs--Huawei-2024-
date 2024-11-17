@@ -22,8 +22,8 @@ struct RoboPredictor::RoboMemory {
     // Configuration constants
     static constexpr int MAX_TABLE_SIZE = 624;   // Total number of entries in the largest table.
     static constexpr int NUM_TABLES = 1;         // Number of history tables.
-    static constexpr int TAG_LENGTH = 12;        // Number of bits used for the tag.
-    static constexpr int MAX_CONFIDENCE = 3;     // Maximum value for the confidence counter.
+    static constexpr int TAG_LENGTH = 50;        // Number of bits used for the tag.
+    static constexpr int MAX_CONFIDENCE = 5;     // Maximum value for the confidence counter.
 
     // Prediction state variables
     bool found = false;                      // Indicates if a matching tag was found.
@@ -187,23 +187,3 @@ RoboPredictor::RoboPredictor() {
 RoboPredictor::~RoboPredictor() {
     delete roboMemory_ptr;
 }
-
-// Optional: Add a main function for testing
-#ifdef TEST_ROBO_PREDICTOR
-int main() {
-    RoboPredictor predictor;
-
-    // Example planet IDs and actual outcomes
-    std::uint64_t planetIDs[] = {12345, 67890, 13579, 24680, 11223, 44556};
-    bool outcomes[] = {true, false, true, true, false, true};
-
-    for (size_t i = 0; i < sizeof(planetIDs)/sizeof(planetIDs[0]); ++i) {
-        bool prediction = predictor.predictTimeOfDayOnNextPlanet(planetIDs[i], false);
-        std::cout << "Prediction for planet " << planetIDs[i] << ": " 
-                  << (prediction ? "True (Day)" : "False (Night)") << std::endl;
-        predictor.observeAndRecordTimeofdayOnNextPlanet(planetIDs[i], outcomes[i]);
-    }
-
-    return 0;
-}
-#endif
